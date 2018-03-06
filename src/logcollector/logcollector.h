@@ -23,6 +23,9 @@
 /* Read logcollector config */
 int LogCollectorConfig(const char *cfgfile);
 
+/* Parse readed logcollector config into JSON format */
+cJSON *LogCollectorGetConfig(void);
+
 /* Start log collector daemon */
 void LogCollectorStart(void) __attribute__((noreturn));
 
