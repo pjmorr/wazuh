@@ -152,4 +152,12 @@ int get_time_to_day(int wday, const char * hour);
 // Function to look for the correct day of the month to run a wodle
 int check_day_to_scan(int day, const char *hour);
 
+#ifndef WIN32
+// Com request thread dispatcher
+void * wmcom_main(void * arg);
+#endif
+
+size_t wmcom_dispatch(char *command, size_t length __attribute__ ((unused)), char *output);
+size_t wmcom_getconfig(const char * section, char * output);
+
 #endif // W_MODULES
