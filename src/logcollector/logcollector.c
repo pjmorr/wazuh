@@ -255,6 +255,9 @@ void LogCollectorStart()
         max_file = 0;
     }
 
+    // Start com request thread
+    w_create_thread(lccom_main, NULL);
+
     /* Daemon loop */
     while (1) {
 #ifndef WIN32
