@@ -22,6 +22,7 @@ logsocket *logsk;
 int vcheck_files;
 int maximum_lines;
 int sample_log_length;
+int max_file;
 static int _cday = 0;
 logsocket default_agent = { .name = "agent" };
 
@@ -50,7 +51,7 @@ static char *rand_keepalive_str(char *dst, int size)
 void LogCollectorStart()
 {
     int i = 0, r = 0, tg;
-    int max_file = 0;
+    max_file = 0;
     int f_check = 0;
     time_t curr_time = 0;
     char keepalive[1024];
