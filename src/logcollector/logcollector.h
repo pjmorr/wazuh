@@ -26,6 +26,7 @@ int LogCollectorConfig(const char *cfgfile);
 /* Parse readed config into JSON format */
 cJSON *getLocalfileConfig(void);
 cJSON *getSocketConfig(void);
+cJSON *getLogcollectorInternalOptions(void);
 
 /* Start log collector daemon */
 void LogCollectorStart(void) __attribute__((noreturn));
@@ -98,5 +99,6 @@ extern int maximum_lines;
 extern logsocket default_agent;
 extern int sample_log_length;
 extern int max_file;
+extern int debug_level;
 
 #endif /* __LOGREADER_H */
