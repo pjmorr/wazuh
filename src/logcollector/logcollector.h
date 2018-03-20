@@ -99,6 +99,7 @@ extern int maximum_lines;
 extern logsocket default_agent;
 extern int sample_log_length;
 extern int max_file;
-extern int debug_level;
+extern int lc_debug_level;
+extern int accept_remote;
 
 #endif /* __LOGREADER_H */
