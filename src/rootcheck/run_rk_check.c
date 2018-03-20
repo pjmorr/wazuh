@@ -60,7 +60,6 @@ void run_rk_check()
     time_t time2;
     FILE *fp;
     OSList *plist;
-    size_t i;
 
 #ifndef WIN32
     /* On non-Windows, always start at / */
@@ -191,6 +190,7 @@ void run_rk_check()
     del_plist((void *)plist);
 
 #else
+    size_t i;
     /* Checks for other non-Windows */
 
     /* Unix audit check ***/
