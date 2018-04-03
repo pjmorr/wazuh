@@ -101,6 +101,10 @@ message_t * rem_msgpop();
 // Free message
 void rem_msgfree(message_t * message);
 
+// Read config
+size_t rem_getconfig(const char * section, char * output, size_t size);
+cJSON *getRemoteConfig(void);
+
 /** Global variables **/
 
 extern keystore keys;
