@@ -86,6 +86,9 @@ int OS_SetRecvTimeout(int socket, int seconds);
  */
 int OS_SendSecureTCP(int sock, uint32_t size, const void * msg);
 
+// Receive dynamic size message. Use with OS_SendSecureTCP function.
+ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret);
+
 // Byte ordering
 
 uint32_t wnet_order(uint32_t value);

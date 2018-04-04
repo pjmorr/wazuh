@@ -532,6 +532,52 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
     return retval;
 }
 
+
+ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret) {
+    ssize_t recvval, recvmsg;
+    char *dyn_buffer;
+    size_t bufsz = sizeof(uint32_t);
+    uint32_t msgsize;
+
+    recvval = recv(sock, &msgsize, bufsz, MSG_WAITALL);
+
+    switch(recvval){
+
+        case -1:
+            return recvval;
+
+        case 0:
+            return recvval;
+    }
+
+    msgsize = wnet_order(msgsize);
+
+    if(msgsize > MAX_DYN_STR){
+        return OS_MAXLEN;
+    }
+
+    os_malloc(msgsize + 1, dyn_buffer);
+
+    if((uint32_t)recvval < msgsize){
+        recvmsg = recv(sock, dyn_buffer, msgsize, MSG_WAITALL);
+
+        switch(recvmsg){
+            case -1:
+                free(dyn_buffer);
+                return recvmsg;
+
+            case 0:
+                free(dyn_buffer);
+                return recvmsg;
+        }
+    }
+
+    dyn_buffer[msgsize] = '\0';
+    *ret = dyn_buffer;
+
+    return recvmsg;
+}
+
 // Byte ordering
 
 uint32_t wnet_order(uint32_t value) {
