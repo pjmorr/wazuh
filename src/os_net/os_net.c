@@ -534,7 +534,7 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
 
 
 ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret) {
-    ssize_t recvval, recvmsg;
+    ssize_t recvval, recvmsg = 0;
     char *dyn_buffer;
     size_t bufsz = sizeof(uint32_t);
     uint32_t msgsize;
