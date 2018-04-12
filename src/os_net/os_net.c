@@ -14,6 +14,7 @@
 #include <errno.h>
 #include "shared.h"
 #include "os_net.h"
+#include "wazuh_modules/wmodules.h"
 
 /* Prototypes */
 static int OS_Bindport(u_int16_t _port, unsigned int _proto, const char *_ip, int ipv6);
@@ -536,10 +537,13 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
 ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret) {
     ssize_t recvval, recvmsg = 0;
     char *dyn_buffer;
-    size_t bufsz = sizeof(uint32_t);
+    const size_t bufsz = 512;
+    char static_buf[bufsz];
+    char *read_size;
     uint32_t msgsize;
+    unsigned int i = 0;
 
-    recvval = recv(sock, &msgsize, bufsz, MSG_WAITALL);
+    recvval = recv(sock, &static_buf, bufsz, 0);
 
     switch(recvval){
 
@@ -550,16 +554,47 @@ ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret) {
             return recvval;
     }
 
-    msgsize = wnet_order(msgsize);
+    if (static_buf[0] == '!') {
+        read_size = &static_buf[1];
+        for (i = 1; static_buf[i] != ' '; i++);
+        if (i == (bufsz - 1)) {
+            merror("At OS_RecvSecureTCP_Dynamic(): invalid message received");
+            return -1;
+        }
+        static_buf[i] = '\0';
+        *ret = strdup(&static_buf[i+1]);
+        msgsize = atoi(read_size);
 
-    if(msgsize > MAX_DYN_STR){
-        return OS_MAXLEN;
+        if(msgsize > MAX_DYN_STR){
+            return OS_MAXLEN;
+        }
+        // Adjust message size
+        recvval = strlen(*ret);
+
+        if((uint32_t)recvval < msgsize){
+            os_malloc(msgsize - recvval + 1, dyn_buffer);
+            recvmsg = recv(sock, dyn_buffer, msgsize - recvval, MSG_WAITALL);
+
+            switch(recvmsg){
+                case -1:
+                    free(dyn_buffer);
+                    return recvmsg;
+
+                case 0:
+                    free(dyn_buffer);
+                    return recvmsg;
+            }
+            os_realloc(*ret,msgsize + 1,*ret);
+            dyn_buffer[recvmsg + 1] = '\0';
+            strncat(*ret, dyn_buffer, recvmsg);
+            free(dyn_buffer);
+        }
+        recvmsg = msgsize;
     }
+    else {
+        os_malloc(OS_MAXSTR + 2, dyn_buffer);
 
-    os_malloc(msgsize + 1, dyn_buffer);
-
-    if((uint32_t)recvval < msgsize){
-        recvmsg = recv(sock, dyn_buffer, msgsize, MSG_WAITALL);
+        recvmsg = recv(sock, dyn_buffer + 1, OS_MAXSTR, 0);
 
         switch(recvmsg){
             case -1:
@@ -570,10 +605,10 @@ ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret) {
                 free(dyn_buffer);
                 return recvmsg;
         }
-    }
 
-    dyn_buffer[msgsize] = '\0';
-    *ret = dyn_buffer;
+        dyn_buffer[recvmsg + 1] = '\0';
+        *ret = dyn_buffer;
+    }
 
     return recvmsg;
 }

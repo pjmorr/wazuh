@@ -102,7 +102,7 @@ message_t * rem_msgpop();
 void rem_msgfree(message_t * message);
 
 // Read config
-size_t rem_getconfig(const char * section, char * output, size_t size);
+size_t rem_getconfig(const char * section, char ** output);
 cJSON *getRemoteConfig(void);
 
 /** Global variables **/
