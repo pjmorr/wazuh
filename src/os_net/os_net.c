@@ -547,7 +547,7 @@ ssize_t OS_RecvSecureTCP_Dynamic(int sock, char **ret) {
     char static_buf[bufsz+1];
     uint32_t msgsize;
 
-    recvval = recv(sock, &static_buf, bufsz, 0);
+    recvval = recv(sock, static_buf, bufsz, 0);
 
     switch(recvval){
 
