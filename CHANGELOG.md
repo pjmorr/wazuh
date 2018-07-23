@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## TBD
+
+### Added
+
+- Now rootcheck runs in parallel to syscheck. ([#991](https://github.com/wazuh/wazuh/pull/991))
+
 ## [v3.5.0]
 
 ### Added
