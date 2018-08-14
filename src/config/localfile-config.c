@@ -11,6 +11,10 @@
 #include "localfile-config.h"
 #include "config.h"
 
+int maximum_files;
+int current_files;
+int total_files;
+
 static void Free_Logreader(logreader * logf);
 
 int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
@@ -18,6 +22,7 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
     unsigned int pl = 0;
     unsigned int i = 0;
     unsigned int glob_set = 0;
+    unsigned int gl = 0;
 #ifndef WIN32
     int glob_offset = 0;
 #endif
@@ -57,6 +62,14 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
         memset(logf + pl + 1, 0, sizeof(logreader));
     }
 
+    if (!log_config->globs) {
+        os_calloc(1, sizeof(logreader_glob), log_config->globs);
+    } else {
+        while (log_config->globs[gl].gpath) {
+            gl++;
+        }
+    }
+    memset(log_config->globs + gl, 0, sizeof(logreader_glob));
     memset(logf + pl, 0, sizeof(logreader));
     logf[pl].ign = 360;
 
@@ -170,7 +183,7 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
                 logf[pl].ign = atoi(node[i]->content);
             }
         } else if (strcmp(node[i]->element, xml_localfile_location) == 0) {
-        #ifdef WIN32
+#ifdef WIN32
             /* Expand variables on Windows */
             if (strchr(node[i]->content, '%')) {
                 int expandreturn = 0;
@@ -186,7 +199,7 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
                     os_strdup(newfile, node[i]->content);
                 }
             }
-        #endif
+#endif
 
             /* This is a glob*
              * We will call this file multiple times until
@@ -356,6 +369,55 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
         os_strdup("agent", logf[pl].target[0]);
     }
 
+
+    /* Deploy glob entries */
+    if (!logf[pl].command) {
+    #ifndef WIN32
+            if (strchr(logf[pl].file, '*') ||
+                strchr(logf[pl].file, '?') ||
+                strchr(logf[pl].file, '[')) {
+                glob_t g;
+                int err;
+                current_files--;
+
+                if (err = glob(logf[pl].file, 0, NULL, &g), err && err != GLOB_NOMATCH) {
+                    merror(GLOB_ERROR, logf[pl].file);
+                } else {
+                    os_realloc(log_config->globs, (gl + 2)*sizeof(logreader_glob), log_config->globs);
+                    os_strdup(logf[pl].file, log_config->globs[gl].gpath);
+                    memset(&log_config->globs[gl + 1], 0, sizeof(logreader_glob));
+                    os_calloc(1, sizeof(logreader), log_config->globs[gl].gfiles);
+                    memcpy(log_config->globs[gl].gfiles, &logf[pl], sizeof(logreader));
+                    log_config->globs[gl].gfiles->file = NULL;
+                }
+                globfree(&g);
+                if (Remove_Localfile(&logf, pl, 0, 0)) {
+                    merror(REM_ERROR, logf[pl].file);
+                    return (OS_INVALID);
+                }
+                log_config->config = logf;
+
+                return 0;
+            } else if (strchr(logf[pl].file, '%'))
+    #else
+            if (strchr(logf[pl].file, '%'))
+    #endif  /* WIN32 */
+            /* We need the format file (based on date) */
+            {
+                struct tm *p;
+                time_t l_time = time(0);
+                char lfile[OS_FLSIZE + 1];
+                size_t ret;
+
+                p = localtime(&l_time);
+                lfile[OS_FLSIZE] = '\0';
+                ret = strftime(lfile, OS_FLSIZE, logf[pl].file, p);
+                if (ret != 0) {
+                    os_strdup(logf[pl].file, logf[pl].ffile);
+                }
+            }
+        }
+
     /* Validate glob entries */
     if (glob_set) {
         char *format;
@@ -509,7 +571,11 @@ int Read_Localfile(XML_NODE node, void *d1, __attribute__((unused)) void *d2)
             merror("Missing 'command' argument. "
                    "This option will be ignored.");
         }
+        total_files++;
+    } else {
+        current_files++;
     }
+
 
     return (0);
 
@@ -598,4 +664,37 @@ void Free_Logreader(logreader * logf) {
             free(logf->out_format);
         }
     }
+}
+
+int Remove_Localfile(logreader **logf, int i, int gl, int fr) {
+    if (*logf) {
+        int size = 0;
+        while ((*logf)[size].file || (!gl && (*logf)[size].logformat)) {
+            size++;
+        }
+        if (i < size) {
+            if (fr) {
+                Free_Logreader(&(*logf)[i]);
+            } else {
+                free((*logf)[i].file);
+                if((*logf)[i].fp) {
+                    fclose((*logf)[i].fp);
+                }
+            }
+            if (i != size -1) {
+                memcpy(&(*logf)[i], &(*logf)[size - 1], sizeof(logreader));
+            }
+            (*logf)[size - 1].file = NULL;
+            (*logf)[size - 1].ffile = NULL;
+            (*logf)[size - 1].command = NULL;
+            (*logf)[size - 1].logformat = NULL;
+            (*logf)[size - 1].fp = NULL;
+
+            if (!size)
+                size = 1;
+            os_realloc(*logf, size*sizeof(logreader), *logf);
+            return 0;
+        }
+    }
+    return (OS_INVALID);
 }

@@ -101,6 +101,9 @@ int main(int argc, char **argv)
 
     mdebug1(STARTED_MSG);
 
+    /* Init message queue */
+    w_msg_hash_queues_init();
+
     /* Read config file */
     if (LogCollectorConfig(cfg) < 0) {
         merror_exit(CONFIG_ERROR, cfg);

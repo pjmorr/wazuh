@@ -21,6 +21,7 @@ int LogCollectorConfig(const char *cfgfile)
     modules |= CSOCKET;
 
     log_config.config = NULL;
+    log_config.globs = NULL;
     log_config.socket_list = NULL;
     log_config.agent_cfg = 0;
     log_config.accept_remote = getDefine_Int("logcollector", "remote_commands", 0, 1);
@@ -30,6 +31,7 @@ int LogCollectorConfig(const char *cfgfile)
     open_file_attempts = getDefine_Int("logcollector", "open_attempts", 2, 998);
     vcheck_files = getDefine_Int("logcollector", "vcheck_files", 0, 1024);
     maximum_lines = getDefine_Int("logcollector", "max_lines", 0, 1000000);
+    maximum_files = getDefine_Int("logcollector", "max_files", 0, 100000);
     sock_fail_time = getDefine_Int("logcollector", "sock_fail_time", 1, 3600);
     sample_log_length = getDefine_Int("logcollector", "sample_log_length", 1, 4096);
 
@@ -51,6 +53,7 @@ int LogCollectorConfig(const char *cfgfile)
 
     logff = log_config.config;
     logsk = log_config.socket_list;
+    globs = log_config.globs;
 
     // List readed sockets
     unsigned int sk;
@@ -70,6 +73,7 @@ int LogCollectorConfig(const char *cfgfile)
 
                 if (strcmp(logff[i].target[j], "agent") == 0) {
                     logff[i].log_target[j].log_socket = &default_agent;
+                    w_msg_hash_queues_add_entry("agent");
                     continue;
                 }
                 int found = -1;
@@ -83,6 +87,7 @@ int LogCollectorConfig(const char *cfgfile)
                     merror_exit("Socket '%s' for '%s' is not defined.", logff[i].target[j], logff[i].file);
                 } else {
                     logff[i].log_target[j].log_socket = &logsk[k];
+                    w_msg_hash_queues_add_entry(logsk[k].name);
                 }
             }
 
