@@ -203,7 +203,7 @@ static int read_file(const char *file_name, int dir_position, whodata_evt *evt, 
         case ENOTDIR:
             /*Deletion message sending*/
             alert_msg[OS_SIZE_6144 - 1] = '\0';
-            snprintf(alert_msg, OS_SIZE_6144, "-1 %s!%s", file_name, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "");
+            snprintf(alert_msg, OS_SIZE_6144, "-1:%s %s", syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "", file_name);
             send_syscheck_msg(alert_msg);
 
             // Delete from hash table
@@ -361,7 +361,7 @@ static int read_file(const char *file_name, int dir_position, whodata_evt *evt, 
 
 #ifdef WIN32
             user = get_user(file_name, statbuf.st_uid, &sid);
-            snprintf(alert_msg, OS_MAXSTR, "%ld:%d:%s::%s:%s:%s:%s:%ld:%ld:%s!%s %s!%s%s%s",
+            snprintf(alert_msg, OS_MAXSTR, "%ld:%d:%s::%s:%s:%s:%s:%ld:%ld:%s:%s!%s %s%s%s",
                 opts & CHECK_SIZE ? (long)statbuf.st_size : 0,
                 opts & CHECK_PERM ? (int)statbuf.st_mode : 0,
                 (opts & CHECK_OWNER) && sid ? sid : "",
@@ -372,16 +372,16 @@ static int read_file(const char *file_name, int dir_position, whodata_evt *evt, 
                 opts & CHECK_MTIME ? (long)statbuf.st_mtime : 0,
                 opts & CHECK_INODE ? (long)statbuf.st_ino : 0,
                 opts & CHECK_SHA256SUM ? sf256_sum : "",
+                syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "",
                 wd_sum,
                 file_name,
-                syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "",
                 alertdump ? "\n" : "",
                 alertdump ? alertdump : "");
             if (sid) {
                 LocalFree(sid);
             }
 #else
-            snprintf(alert_msg, OS_MAXSTR, "%ld:%d:%d:%d:%s:%s:%s:%s:%ld:%ld:%s!%s %s!%s%s%s",
+            snprintf(alert_msg, OS_MAXSTR, "%ld:%d:%d:%d:%s:%s:%s:%s:%ld:%ld:%s:%s!%s %s%s%s",
                 opts & CHECK_SIZE ? (long)statbuf.st_size : 0,
                 opts & CHECK_PERM ? (int)statbuf.st_mode : 0,
                 opts & CHECK_OWNER ? (int)statbuf.st_uid : 0,
@@ -393,9 +393,9 @@ static int read_file(const char *file_name, int dir_position, whodata_evt *evt, 
                 opts & CHECK_MTIME ? (long)statbuf.st_mtime : 0,
                 opts & CHECK_INODE ? (long)statbuf.st_ino : 0,
                 opts & CHECK_SHA256SUM ? sf256_sum : "",
+                syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "",
                 wd_sum,
                 file_name,
-                syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "",
                 alertdump ? "\n" : "",
                 alertdump ? alertdump : "");
 #endif
@@ -438,14 +438,17 @@ static int read_file(const char *file_name, int dir_position, whodata_evt *evt, 
                 if (buf[9] == '+') {
                     fullalert = seechanges_addfile(file_name);
                     if (fullalert) {
-                        snprintf(alert_msg, OS_MAXSTR, "%s!%s %s!%s\n%s", c_sum, wd_sum, file_name, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "", fullalert);
+                        snprintf(alert_msg, OS_MAXSTR, "%s:%s!%s %s\n%s",
+                                c_sum, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "", wd_sum, file_name, fullalert);
                         free(fullalert);
                         fullalert = NULL;
                     } else {
-                        snprintf(alert_msg, OS_MAXSTR, "%s!%s %s!%s", c_sum, wd_sum, file_name, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "");
+                        snprintf(alert_msg, OS_MAXSTR, "%s:%s!%s %s",
+                                c_sum, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "", wd_sum, file_name);
                     }
                 } else {
-                    snprintf(alert_msg, OS_MAXSTR, "%s!%s %s!%s", c_sum, wd_sum, file_name, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "");
+                    snprintf(alert_msg, OS_MAXSTR, "%s:%s!%s %s",
+                            c_sum, syscheck.tag[dir_position] ? syscheck.tag[dir_position] : "", wd_sum, file_name);
                 }
                 free(buf);
                 send_syscheck_msg(alert_msg);
@@ -630,7 +633,7 @@ int run_dbcheck()
 
                 pos = find_dir_pos(curr_node->key, 1, 0, 0);
                 mdebug2("Sending delete msg for file: %s", curr_node->key);
-                snprintf(alert_msg, OS_SIZE_6144 - 1, "-1 %s!%s", curr_node->key, syscheck.tag[pos] ? syscheck.tag[pos] : "");
+                snprintf(alert_msg, OS_SIZE_6144 - 1, "-1:%s %s", syscheck.tag[pos] ? syscheck.tag[pos] : "", curr_node->key);
                 send_syscheck_msg(alert_msg);
                 OSHash_Delete_ex(syscheck.last_check, curr_node->key);
                 if (data = OSHash_Delete_ex(syscheck.fp, curr_node->key), data) {
