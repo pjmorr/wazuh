@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Fixed empty configuration blocks for Wazuh modules. ([#1101](https://github.com/wazuh/wazuh/pull/1101))
 - Fix broken pipe error in Wazuh DB by Vulnerability Detector. ([#1111](https://github.com/wazuh/wazuh/pull/1111))
 - Restored firewall-drop AR script for Linux. ([#1114](https://github.com/wazuh/wazuh/pull/1114))
+- Fix unknown severity in Red Hat systems ([#1118](https://github.com/wazuh/wazuh/pull/1118))
 
 ### Removed
 
